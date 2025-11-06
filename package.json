@@ -1,0 +1,84 @@
+{
+  "name": "reference-grouper",
+  "displayName": "Reference Grouper",
+  "description": "Groups references in the references view by Read/Write operations",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "*"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "panel": [
+        {
+          "id": "referenceGrouper",
+          "title": "Grouped References",
+          "icon": "$(references)"
+        }
+      ]
+    },
+    "views": {
+      "referenceGrouper": [
+        {
+          "id": "referenceGrouper.referencesView",
+          "name": "References"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "referenceGrouper.findAllReferences",
+        "title": "Find All References (Grouped)",
+        "category": "Reference Grouper"
+      },
+      {
+        "command": "referenceGrouper.openReference",
+        "title": "Open Reference"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "referenceGrouper.findAllReferences",
+        "key": "shift+alt+f12",
+        "when": "editorHasReferenceProvider && editorTextFocus && !inReferenceSearchEditor && !isInEmbeddedEditor"
+      }
+    ],
+    "configuration": {
+      "title": "Reference Grouper",
+      "properties": {
+        "referenceGrouper.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable/disable reference grouping by read/write operations"
+        },
+        "referenceGrouper.showCounts": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show count of references in each group"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/node": "18.x",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0",
+    "eslint": "^8.56.0",
+    "typescript": "^5.3.3"
+  }
+}
