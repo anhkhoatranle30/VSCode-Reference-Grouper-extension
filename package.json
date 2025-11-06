@@ -2,7 +2,7 @@
   "name": "reference-grouper",
   "displayName": "Reference Grouper",
   "description": "Groups references in the references view by Read/Write operations",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "publisher": "anhkhoatranle30",
   "engines": {
     "vscode": "^1.85.0"
@@ -12,14 +12,14 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/anhkhoatranle30/reference-grouper"
+    "url": "https://github.com/anhkhoatranle30/VSCode-Reference-Grouper-extension"
   },
-  "author": "Anh Khoa Tran Le",
+  "author": "anhkhoatranle30",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/anhkhoatranle30/reference-grouper/issues"
+    "url": "https://github.com/anhkhoatranle30/VSCode-Reference-Grouper-extension/issues"
   },
-  "homepage": "https://github.com/anhkhoatranle30/reference-grouper#readme",
+  "homepage": "https://github.com/anhkhoatranle30/VSCode-Reference-Grouper-extension#readme",
   "keywords": [
     "references",
     "read",
