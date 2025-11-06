@@ -1,0 +1,2 @@
+Bạn có thể tạo icon 128x128px với logo của extension.
+Hoặc xóa dòng "icon": "icon.png" trong package.json nếu không có icon.
