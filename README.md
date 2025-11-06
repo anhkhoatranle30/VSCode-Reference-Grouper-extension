@@ -2,6 +2,12 @@
 
 A Visual Studio Code extension that groups references into **Read** and **Write** categories in the references view.
 
+## Screenshots
+
+![Reference Grouper in action](images/screenshot1.png)
+
+*References grouped by Writes and Reads in the bottom panel*
+
 ## Features
 
 - 📖 **Read References**: Shows all places where a symbol is read/accessed
@@ -15,10 +21,21 @@ A Visual Studio Code extension that groups references into **Read** and **Write*
 2. Use one of these methods:
    - Right-click and select "Find All References"
    - Press `Shift+F12` (default keybinding)
-   - Use Command Palette: `References: Find All References`
+   - Press `Shift+Alt+F12` (extension keybinding)
+   - Use Command Palette: `References: Find All References (Grouped)`
 3. The extension will show references grouped into:
    - **Writes**: Assignments, increments, decrements, mutations
    - **Reads**: All other references
+
+### Example
+
+![Grouped References Panel](images/panel-view.png)
+
+The bottom panel shows:
+- ✏️ **Writes (7)** - All places where the variable is modified
+- 📖 **Reads (7)** - All places where the variable is accessed
+
+Click on any reference to jump to that location in your code.
 
 ## Write Detection
 

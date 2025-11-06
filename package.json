@@ -12,14 +12,14 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/anhkhoatranle30/VSCode-Reference-Grouper-extension"
+    "url": "https://github.com/anhkhoatranle30/reference-grouper"
   },
-  "author": "anhkhoatranle30",
+  "author": "Anh Khoa Tran Le",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/anhkhoatranle30/VSCode-Reference-Grouper-extension/issues"
+    "url": "https://github.com/anhkhoatranle30/reference-grouper/issues"
   },
-  "homepage": "https://github.com/anhkhoatranle30/VSCode-Reference-Grouper-extension#readme",
+  "homepage": "https://github.com/anhkhoatranle30/reference-grouper#readme",
   "keywords": [
     "references",
     "read",
@@ -27,6 +27,10 @@
     "grouping",
     "code-analysis"
   ],
+  "galleryBanner": {
+    "color": "#1e1e1e",
+    "theme": "dark"
+  },
   "activationEvents": [
     "*"
   ],
@@ -67,6 +71,21 @@
         "when": "editorHasReferenceProvider && editorTextFocus && !inReferenceSearchEditor && !isInEmbeddedEditor"
       }
     ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "referenceGrouper.findAllReferences",
+          "when": "editorHasReferenceProvider",
+          "group": "4_search@1.5"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "referenceGrouper.findAllReferences",
+          "when": "editorHasReferenceProvider"
+        }
+      ]
+    },
     "configuration": {
       "title": "Reference Grouper",
       "properties": {
