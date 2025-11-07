@@ -7,10 +7,11 @@ interface GroupedReference {
 
 class ReferenceTreeItem extends vscode.TreeItem {
     constructor(
-        public readonly label: string,
+        label: string | vscode.TreeItemLabel,
         public readonly collapsibleState: vscode.TreeItemCollapsibleState,
         public readonly location?: vscode.Location,
-        public readonly isGroup: boolean = false
+        public readonly isGroup: boolean = false,
+        public readonly symbolName?: string
     ) {
         super(label, collapsibleState);
         
@@ -26,7 +27,7 @@ class ReferenceTreeItem extends vscode.TreeItem {
         }
         
         if (isGroup) {
-            this.iconPath = new vscode.ThemeIcon(label.includes('Write') ? 'edit' : 'book');
+            this.iconPath = new vscode.ThemeIcon(label.toString().includes('Write') ? 'edit' : 'book');
         }
     }
 }
@@ -38,10 +39,12 @@ class ReferenceTreeProvider implements vscode.TreeDataProvider<ReferenceTreeItem
     private writes: vscode.Location[] = [];
     private reads: vscode.Location[] = [];
     private documents: Map<string, vscode.TextDocument> = new Map();
+    private symbolName: string = '';
 
-    async setReferences(writes: vscode.Location[], reads: vscode.Location[]) {
+    async setReferences(writes: vscode.Location[], reads: vscode.Location[], symbolName: string) {
         this.writes = writes;
         this.reads = reads;
+        this.symbolName = symbolName;
         
         // Preload documents for display
         this.documents.clear();
@@ -90,18 +93,31 @@ class ReferenceTreeProvider implements vscode.TreeDataProvider<ReferenceTreeItem
             return items;
         } else {
             // Child level - show references
-            const isWriteGroup = element.label.startsWith('Writes');
+            const labelText = typeof element.label === 'string' ? element.label : element.label?.label || '';
+            const isWriteGroup = labelText.startsWith('Writes');
             const locations = isWriteGroup ? this.writes : this.reads;
             
             return locations.map(loc => {
                 const doc = this.documents.get(loc.uri.toString());
                 const lineText = doc ? doc.lineAt(loc.range.start.line).text.trim() : '';
+                const displayText = lineText || `Line ${loc.range.start.line + 1}`;
+                
+                // Create label with highlight
+                let itemLabel: string | vscode.TreeItemLabel = displayText;
+                if (this.symbolName && displayText.includes(this.symbolName)) {
+                    const startIndex = displayText.indexOf(this.symbolName);
+                    itemLabel = {
+                        label: displayText,
+                        highlights: [[startIndex, startIndex + this.symbolName.length]]
+                    };
+                }
                 
                 return new ReferenceTreeItem(
-                    lineText || `Line ${loc.range.start.line + 1}`,
+                    itemLabel,
                     vscode.TreeItemCollapsibleState.None,
                     loc,
-                    false
+                    false,
+                    this.symbolName
                 );
             });
         }
@@ -142,6 +158,11 @@ export function activate(context: vscode.ExtensionContext) {
             const uri = editor.document.uri;
             const position = editor.selection.active;
 
+            // Get the symbol name at cursor position for highlighting
+            const document = editor.document;
+            const wordRange = document.getWordRangeAtPosition(position);
+            const symbolName = wordRange ? document.getText(wordRange) : '';
+
             // Get all references
             const locations = await vscode.commands.executeCommand<vscode.Location[]>(
                 'vscode.executeReferenceProvider',
@@ -157,8 +178,8 @@ export function activate(context: vscode.ExtensionContext) {
             // Group references by read/write
             const groupedRefs = await groupReferencesByReadWrite(locations, uri, position);
             
-            // Update tree view
-            await referenceTreeProvider.setReferences(groupedRefs.writes, groupedRefs.reads);
+            // Update tree view with symbol name for highlighting
+            await referenceTreeProvider.setReferences(groupedRefs.writes, groupedRefs.reads, symbolName);
             
             // Focus the tree view (this will open the panel at bottom)
             await vscode.commands.executeCommand('referenceGrouper.referencesView.focus');
