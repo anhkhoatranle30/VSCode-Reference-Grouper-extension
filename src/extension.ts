@@ -11,7 +11,9 @@ class ReferenceTreeItem extends vscode.TreeItem {
         public readonly collapsibleState: vscode.TreeItemCollapsibleState,
         public readonly location?: vscode.Location,
         public readonly isGroup: boolean = false,
-        public readonly symbolName?: string
+        public readonly symbolName?: string,
+        public readonly isFileGroup: boolean = false,
+        public readonly hideIcon: boolean = false
     ) {
         super(label, collapsibleState);
         
@@ -22,12 +24,25 @@ class ReferenceTreeItem extends vscode.TreeItem {
                 arguments: [location]
             };
             
-            this.resourceUri = location.uri;
-            this.description = `${vscode.workspace.asRelativePath(location.uri)}:${location.range.start.line + 1}`;
+            // Don't set resourceUri when we want to hide the icon
+            if (!hideIcon) {
+                this.resourceUri = location.uri;
+            }
+            
+            // Put line number on the far right
+            // VSCode will align description to the right automatically
+            const lineNumber = location.range.start.line + 1;
+            this.description = `Line ${lineNumber}`;
+            
+            this.tooltip = undefined;
         }
         
         if (isGroup) {
             this.iconPath = new vscode.ThemeIcon(label.toString().includes('Write') ? 'edit' : 'book');
+        }
+        
+        if (isFileGroup) {
+            this.iconPath = new vscode.ThemeIcon('file-code');
         }
     }
 }
@@ -40,6 +55,18 @@ class ReferenceTreeProvider implements vscode.TreeDataProvider<ReferenceTreeItem
     private reads: vscode.Location[] = [];
     private documents: Map<string, vscode.TextDocument> = new Map();
     private symbolName: string = '';
+    private groupByFile: boolean = false;
+    private showFullPath: boolean = false;
+
+    setGroupByFile(value: boolean) {
+        this.groupByFile = value;
+        this._onDidChangeTreeData.fire();
+    }
+
+    setShowFullPath(value: boolean) {
+        this.showFullPath = value;
+        this._onDidChangeTreeData.fire();
+    }
 
     async setReferences(writes: vscode.Location[], reads: vscode.Location[], symbolName: string) {
         this.writes = writes;
@@ -77,7 +104,10 @@ class ReferenceTreeProvider implements vscode.TreeDataProvider<ReferenceTreeItem
                     `Writes (${this.writes.length})`,
                     vscode.TreeItemCollapsibleState.Expanded,
                     undefined,
-                    true
+                    true,
+                    undefined,
+                    false,
+                    false
                 ));
             }
             
@@ -86,41 +116,94 @@ class ReferenceTreeProvider implements vscode.TreeDataProvider<ReferenceTreeItem
                     `Reads (${this.reads.length})`,
                     vscode.TreeItemCollapsibleState.Expanded,
                     undefined,
-                    true
+                    true,
+                    undefined,
+                    false,
+                    false
                 ));
             }
             
             return items;
-        } else {
-            // Child level - show references
+        } else if (element.isGroup) {
+            // Writes/Reads group - show files or references
             const labelText = typeof element.label === 'string' ? element.label : element.label?.label || '';
             const isWriteGroup = labelText.startsWith('Writes');
             const locations = isWriteGroup ? this.writes : this.reads;
             
-            return locations.map(loc => {
-                const doc = this.documents.get(loc.uri.toString());
-                const lineText = doc ? doc.lineAt(loc.range.start.line).text.trim() : '';
-                const displayText = lineText || `Line ${loc.range.start.line + 1}`;
-                
-                // Create label with highlight
-                let itemLabel: string | vscode.TreeItemLabel = displayText;
-                if (this.symbolName && displayText.includes(this.symbolName)) {
-                    const startIndex = displayText.indexOf(this.symbolName);
-                    itemLabel = {
-                        label: displayText,
-                        highlights: [[startIndex, startIndex + this.symbolName.length]]
-                    };
+            if (this.groupByFile) {
+                // Group by file
+                const fileGroups = new Map<string, vscode.Location[]>();
+                for (const loc of locations) {
+                    const filePath = loc.uri.toString();
+                    if (!fileGroups.has(filePath)) {
+                        fileGroups.set(filePath, []);
+                    }
+                    fileGroups.get(filePath)!.push(loc);
                 }
                 
-                return new ReferenceTreeItem(
-                    itemLabel,
-                    vscode.TreeItemCollapsibleState.None,
-                    loc,
-                    false,
-                    this.symbolName
-                );
-            });
+                const items: ReferenceTreeItem[] = [];
+                for (const [filePath, locs] of fileGroups) {
+                    const uri = vscode.Uri.parse(filePath);
+                    // Use setting to determine if showing full path or just filename
+                    const displayName = this.showFullPath 
+                        ? vscode.workspace.asRelativePath(uri)
+                        : (uri.path.split('/').pop() || uri.path);
+                    const item = new ReferenceTreeItem(
+                        `${displayName} (${locs.length})`,
+                        vscode.TreeItemCollapsibleState.Expanded,
+                        undefined,
+                        false,
+                        undefined,
+                        true,
+                        false
+                    );
+                    // Override icon to show file type icon
+                    item.resourceUri = uri;
+                    item.iconPath = vscode.ThemeIcon.File;
+                    // Store locations in a custom property
+                    (item as any).fileLocations = locs;
+                    items.push(item);
+                }
+                return items;
+            } else {
+                // Show references directly without file grouping - show file icons
+                return this.createReferenceItems(locations, false);
+            }
+        } else if (element.isFileGroup) {
+            // File group - show references without file icons (parent already shows file icon)
+            const locations = (element as any).fileLocations as vscode.Location[];
+            return this.createReferenceItems(locations, true);
         }
+        
+        return [];
+    }
+
+    private createReferenceItems(locations: vscode.Location[], hideIcon: boolean = false): ReferenceTreeItem[] {
+        return locations.map(loc => {
+            const doc = this.documents.get(loc.uri.toString());
+            const lineText = doc ? doc.lineAt(loc.range.start.line).text.trim() : '';
+            const displayText = lineText || `Line ${loc.range.start.line + 1}`;
+            
+            // Create label with highlight
+            let itemLabel: string | vscode.TreeItemLabel = displayText;
+            if (this.symbolName && displayText.includes(this.symbolName)) {
+                const startIndex = displayText.indexOf(this.symbolName);
+                itemLabel = {
+                    label: displayText,
+                    highlights: [[startIndex, startIndex + this.symbolName.length]]
+                };
+            }
+            
+            return new ReferenceTreeItem(
+                itemLabel,
+                vscode.TreeItemCollapsibleState.None,
+                loc,
+                false,
+                this.symbolName,
+                false,
+                hideIcon
+            );
+        });
     }
 }
 
@@ -144,6 +227,22 @@ export function activate(context: vscode.ExtensionContext) {
             preserveFocus: false
         });
         editor.revealRange(location.range, vscode.TextEditorRevealType.InCenter);
+    });
+
+    // Register toggle group by file command
+    const toggleGroupByFileCommand = vscode.commands.registerCommand('referenceGrouper.toggleGroupByFile', async () => {
+        const config = vscode.workspace.getConfiguration('referenceGrouper');
+        const currentValue = config.get('groupByFile', false);
+        await config.update('groupByFile', !currentValue, vscode.ConfigurationTarget.Global);
+        referenceTreeProvider.setGroupByFile(!currentValue);
+    });
+
+    // Register toggle show full path command
+    const toggleShowFullPathCommand = vscode.commands.registerCommand('referenceGrouper.toggleShowFullPath', async () => {
+        const config = vscode.workspace.getConfiguration('referenceGrouper');
+        const currentValue = config.get('showFullPath', false);
+        await config.update('showFullPath', !currentValue, vscode.ConfigurationTarget.Global);
+        referenceTreeProvider.setShowFullPath(!currentValue);
     });
 
     // Register main command
@@ -178,6 +277,14 @@ export function activate(context: vscode.ExtensionContext) {
             // Group references by read/write
             const groupedRefs = await groupReferencesByReadWrite(locations, uri, position);
             
+            // Get settings
+            const config = vscode.workspace.getConfiguration('referenceGrouper');
+            const groupByFile = config.get('groupByFile', false);
+            const showFullPath = config.get('showFullPath', false);
+            
+            referenceTreeProvider.setGroupByFile(groupByFile);
+            referenceTreeProvider.setShowFullPath(showFullPath);
+            
             // Update tree view with symbol name for highlighting
             await referenceTreeProvider.setReferences(groupedRefs.writes, groupedRefs.reads, symbolName);
             
@@ -191,7 +298,7 @@ export function activate(context: vscode.ExtensionContext) {
         }
     });
 
-    context.subscriptions.push(referenceTreeView, openReferenceCommand, findReferencesCommand);
+    context.subscriptions.push(referenceTreeView, openReferenceCommand, toggleGroupByFileCommand, toggleShowFullPathCommand, findReferencesCommand);
 }
 
 async function groupReferencesByReadWrite(

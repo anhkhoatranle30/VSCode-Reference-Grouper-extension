@@ -2,7 +2,7 @@
   "name": "reference-grouper",
   "displayName": "Reference Grouper",
   "description": "Groups references in the references view by Read/Write operations",
-  "version": "0.3.0",
+  "version": "0.5.0",
   "publisher": "anhkhoatranle30",
   "engines": {
     "vscode": "^1.85.0"
@@ -62,6 +62,18 @@
       {
         "command": "referenceGrouper.openReference",
         "title": "Open Reference"
+      },
+      {
+        "command": "referenceGrouper.toggleGroupByFile",
+        "title": "Toggle Group By File",
+        "category": "Reference Grouper",
+        "icon": "$(folder)"
+      },
+      {
+        "command": "referenceGrouper.toggleShowFullPath",
+        "title": "Toggle Show Full Path",
+        "category": "Reference Grouper",
+        "icon": "$(whole-word)"
       }
     ],
     "keybindings": [
@@ -72,6 +84,18 @@
       }
     ],
     "menus": {
+      "view/title": [
+        {
+          "command": "referenceGrouper.toggleGroupByFile",
+          "when": "view == referenceGrouper.referencesView",
+          "group": "navigation@1"
+        },
+        {
+          "command": "referenceGrouper.toggleShowFullPath",
+          "when": "view == referenceGrouper.referencesView",
+          "group": "navigation@2"
+        }
+      ],
       "editor/context": [
         {
           "command": "referenceGrouper.findAllReferences",
@@ -98,6 +122,16 @@
           "type": "boolean",
           "default": true,
           "description": "Show count of references in each group"
+        },
+        "referenceGrouper.groupByFile": {
+          "type": "boolean",
+          "default": false,
+          "description": "Group references by file within Writes/Reads groups"
+        },
+        "referenceGrouper.showFullPath": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show full file path instead of just filename when grouping by file"
         }
       }
     }

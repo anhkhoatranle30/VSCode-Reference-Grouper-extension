@@ -75,7 +75,7 @@ Access settings through `File > Preferences > Settings` or search for "Reference
 
 1. Install vsce: `npm install -g @vscode/vsce`
 2. Package the extension: `vsce package`
-3. Install the `.vsix` file: `code --install-extension reference-grouper-0.1.0.vsix`
+3. Install the `.vsix` file: `code --install-extension reference-grouper-0.5.0.vsix`
 
 ## Development
 
@@ -130,3 +130,17 @@ MIT
 ### 0.1.0
 
 Initial release with basic read/write grouping functionality.
+
+### 0.5.0
+
+Added highlight feature
+
+![Added highlight feature](images/features/example-highlight.png)
+
+Added group by file feature
+
+![Added group by file feature](images/features/example-group-by-file.png)
+
+Added toggle file fullpath feature
+
+![Added toggle file fullpath feature](images/features/example-toggle-file-fullpath.png)
